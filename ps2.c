@@ -11,14 +11,12 @@
 #define DEFAULT_DATA_PIN 4
 
 #define BUFFER_SIZE 45
-//static uint8_t buffer[BUFFER_SIZE];
-static uint16_t buffer[BUFFER_SIZE];
+static uint8_t buffer[BUFFER_SIZE];
 static uint8_t head = 0, tail = 0;
 static int ClockPin = DEFAULT_CLOCK_PIN;
 static int DataPin = DEFAULT_DATA_PIN;
 static uint8_t bitcount = 0;
-//static uint8_t incoming = 0;
-static uint16_t incoming = 0;
+static uint8_t incoming = 0;
 static uint32_t prev_ms = 0;
 static int count = 0;
 
@@ -53,9 +51,8 @@ STATIC mp_obj_t ps2_init(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_a
 void ps2_callback_body()
 {
   uint32_t now_ms;
-  //uint8_t n;
-  //uint8_t val;
-  uint16_t val;
+  uint8_t n;
+  uint8_t val;
 
   count ++;
   val = GPIO_INPUT_GET(DataPin);
@@ -65,11 +62,10 @@ void ps2_callback_body()
     incoming = 0;
   }
   prev_ms = now_ms;
-  //n = bitcount - 1;
-  //  if (n <= 7) {
-  //    incoming |= (val << n);
-  //  }
-  incoming |= (val << bitcount);
+  n = bitcount - 1;
+  if (n <= 7) {
+    incoming |= (val << n);
+  }
   bitcount++;
   if (bitcount == 11) {
     uint8_t i = head + 1;
@@ -118,7 +114,7 @@ STATIC mp_obj_t ps2_data(void)
 
 STATIC mp_obj_t ps2_get_scan_code(void)
 {
-  uint16_t c;
+  uint8_t c;
   uint8_t i;
 
   i = tail;
