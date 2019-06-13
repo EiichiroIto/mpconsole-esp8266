@@ -6,6 +6,7 @@
 #include "c_types.h"
 #include "user_interface.h"
 #include "gpio.h"
+#include "ps2.h"
 
 #define DEFAULT_CLOCK_PIN 5
 #define DEFAULT_DATA_PIN 4
@@ -15,12 +16,10 @@ static uint8_t buffer[BUFFER_SIZE];
 static uint8_t head = 0, tail = 0;
 static int ClockPin = DEFAULT_CLOCK_PIN;
 static int DataPin = DEFAULT_DATA_PIN;
-static uint8_t bitcount = 0;
-static uint8_t incoming = 0;
-static uint32_t prev_ms = 0;
 static int count = 0;
 
-void ps2_callback();
+int ClockMask = 0x00;
+
 static uint8_t get_scan_code();
 static bool available();
 static char read();
@@ -37,20 +36,18 @@ STATIC mp_obj_t ps2_init(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_a
   mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
   mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
   ClockPin = args[ARG_clock].u_int;
+  ClockMask = 1 << ClockPin;
   DataPin = args[ARG_data].u_int;
 
   ETS_GPIO_INTR_DISABLE();
   // 2 = GPIO_PIN_INTR_NEGEDGE
   GPIO_REG_WRITE(GPIO_PIN_ADDR(ClockPin), (GPIO_REG_READ(GPIO_PIN_ADDR(ClockPin)) & ~GPIO_PIN_INT_TYPE_MASK) | GPIO_PIN_INT_TYPE_SET(2));
-  GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, 1 << ClockPin);
+  GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, ClockMask);
   ETS_GPIO_INTR_ENABLE();
 
   memset(buffer, 0, sizeof buffer);
   head = 0;
   tail = 0;
-  bitcount = 0;
-  incoming = 0;
-  prev_ms = 0;
   count = 0;
 
   return mp_const_none;
@@ -117,6 +114,33 @@ STATIC mp_obj_t ps2_clear(void)
   return mp_const_none;
 }
 
+STATIC mp_obj_t ps2_readinto(size_t n_args, const mp_obj_t *args)
+{
+  mp_buffer_info_t bufinfo;
+  mp_get_buffer_raise(args[1], &bufinfo, MP_BUFFER_WRITE);
+  mp_uint_t len = bufinfo.len;
+  if (n_args > 2) {
+    len = mp_obj_get_int(args[2]);
+    if (len > bufinfo.len) {
+      len = bufinfo.len;
+    }
+  }
+  char *buf = bufinfo.buf;
+  int done = 0;
+  while (done < len) {
+    char c = read();
+    if (!c) {
+      break;
+    }
+    buf[done] = c;
+    done ++;
+  }
+  if (done) {
+    return mp_obj_new_int(done);
+  }
+  return mp_const_none;
+}
+
 STATIC MP_DEFINE_CONST_FUN_OBJ_KW(ps2_init_obj, 0, ps2_init);
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(ps2_get_obj, ps2_get);
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_head_obj, ps2_head);
@@ -129,6 +153,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_available_obj, ps2_available);
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_read_obj, ps2_read);
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_peek_obj, ps2_peek);
 STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_clear_obj, ps2_clear);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ps2_readinto_obj, 2, 3, ps2_readinto);
 
 STATIC const mp_map_elem_t ps2_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ps2) },
@@ -145,6 +170,7 @@ STATIC const mp_map_elem_t ps2_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR_peek), (mp_obj_t)&ps2_peek_obj },
     { MP_ROM_QSTR(MP_QSTR_clear), (mp_obj_t)&ps2_clear_obj },
     { MP_ROM_QSTR(MP_QSTR_read), (mp_obj_t)&ps2_read_obj },
+    { MP_ROM_QSTR(MP_QSTR_readinto), (mp_obj_t)&ps2_readinto_obj },
 };
 
 STATIC MP_DEFINE_CONST_DICT (
@@ -160,6 +186,9 @@ const mp_obj_module_t mp_module_ps2 = {
 void
 ps2_callback()
 {
+  static uint8_t bitcount = 0;
+  static uint8_t incoming = 0;
+  static uint32_t prev_ms = 0;
   uint32_t now_ms;
   uint8_t n;
   uint8_t val;
