@@ -34,9 +34,9 @@
 void pin_intr_handler_iram(void *arg) {
     uint32_t status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
     GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, status);
-    if (status & ClockMask) {
+    if (status & ps2_ClockMask) {
       ps2_callback();
-      status = status ^ ClockMask;
+      status = status ^ ps2_ClockMask;
     }
     pin_intr_handler(status);
 }

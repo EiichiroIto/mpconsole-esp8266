@@ -18,15 +18,9 @@ static int ClockPin = DEFAULT_CLOCK_PIN;
 static int DataPin = DEFAULT_DATA_PIN;
 static int count = 0;
 
-int ClockMask = 0x00;
+int ps2_ClockMask = 0x00;
 
-static uint8_t get_scan_code();
-static bool available();
-static char read();
-static char peek();
-static void clear();
-
-STATIC mp_obj_t ps2_init(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
+STATIC mp_obj_t mp_ps2_init(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args)
 {
   enum { ARG_clock, ARG_data };
   static const mp_arg_t allowed_args[] = {
@@ -35,86 +29,72 @@ STATIC mp_obj_t ps2_init(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_a
   };
   mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
   mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
-  ClockPin = args[ARG_clock].u_int;
-  ClockMask = 1 << ClockPin;
-  DataPin = args[ARG_data].u_int;
-
-  ETS_GPIO_INTR_DISABLE();
-  // 2 = GPIO_PIN_INTR_NEGEDGE
-  GPIO_REG_WRITE(GPIO_PIN_ADDR(ClockPin), (GPIO_REG_READ(GPIO_PIN_ADDR(ClockPin)) & ~GPIO_PIN_INT_TYPE_MASK) | GPIO_PIN_INT_TYPE_SET(2));
-  GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, ClockMask);
-  ETS_GPIO_INTR_ENABLE();
-
-  memset(buffer, 0, sizeof buffer);
-  head = 0;
-  tail = 0;
-  count = 0;
-
+  ps2_init(args[ARG_clock].u_int, args[ARG_data].u_int);
   return mp_const_none;
 }
 
-STATIC mp_obj_t ps2_get(mp_obj_t what)
+STATIC mp_obj_t mp_ps2_get(mp_obj_t what)
 {
   int i = mp_obj_get_int(what);
   return mp_obj_new_int(buffer[i & BUFFER_SIZE]);
 }
 
-STATIC mp_obj_t ps2_head(void)
+STATIC mp_obj_t mp_ps2_head(void)
 {
   return mp_obj_new_int(head);
 }
 
-STATIC mp_obj_t ps2_tail(void)
+STATIC mp_obj_t mp_ps2_tail(void)
 {
   return mp_obj_new_int(tail);
 }
 
-STATIC mp_obj_t ps2_count(void)
+STATIC mp_obj_t mp_ps2_count(void)
 {
   return mp_obj_new_int(count);
 }
 
-STATIC mp_obj_t ps2_clock(void)
+STATIC mp_obj_t mp_ps2_clock(void)
 {
   return mp_obj_new_int(ClockPin);
 }
 
-STATIC mp_obj_t ps2_data(void)
+STATIC mp_obj_t mp_ps2_data(void)
 {
   return mp_obj_new_int(DataPin);
 }
 
-STATIC mp_obj_t ps2_get_scan_code(void)
+STATIC mp_obj_t mp_ps2_get_scan_code(void)
 {
-  uint8_t c = get_scan_code();
+  uint8_t c = ps2_get_scan_code();
   return mp_obj_new_int(c);
 }
 
-STATIC mp_obj_t ps2_available(void)
+STATIC mp_obj_t mp_ps2_available(void)
 {
-  bool ret = available();
+  bool ret = ps2_available();
   return mp_obj_new_bool(ret);
 }
 
-STATIC mp_obj_t ps2_read(void)
+STATIC mp_obj_t mp_ps2_read(void)
 {
-  char c = read();
+  char c = ps2_read();
   return mp_obj_new_int(c);
 }
 
-STATIC mp_obj_t ps2_peek(void)
+STATIC mp_obj_t mp_ps2_peek(void)
 {
-  char c = peek();
+  char c = ps2_peek();
   return mp_obj_new_int(c);
 }
 
-STATIC mp_obj_t ps2_clear(void)
+STATIC mp_obj_t mp_ps2_clear(void)
 {
-  clear();
+  ps2_clear();
   return mp_const_none;
 }
 
-STATIC mp_obj_t ps2_readinto(size_t n_args, const mp_obj_t *args)
+STATIC mp_obj_t mp_ps2_readinto(size_t n_args, const mp_obj_t *args)
 {
   mp_buffer_info_t bufinfo;
   mp_get_buffer_raise(args[1], &bufinfo, MP_BUFFER_WRITE);
@@ -128,7 +108,7 @@ STATIC mp_obj_t ps2_readinto(size_t n_args, const mp_obj_t *args)
   char *buf = bufinfo.buf;
   int done = 0;
   while (done < len) {
-    char c = read();
+    char c = ps2_read();
     if (!c) {
       break;
     }
@@ -141,47 +121,67 @@ STATIC mp_obj_t ps2_readinto(size_t n_args, const mp_obj_t *args)
   return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_KW(ps2_init_obj, 0, ps2_init);
-STATIC MP_DEFINE_CONST_FUN_OBJ_1(ps2_get_obj, ps2_get);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_head_obj, ps2_head);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_tail_obj, ps2_tail);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_count_obj, ps2_count);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_clock_obj, ps2_clock);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_data_obj, ps2_data);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_get_scan_code_obj, ps2_get_scan_code);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_available_obj, ps2_available);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_read_obj, ps2_read);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_peek_obj, ps2_peek);
-STATIC MP_DEFINE_CONST_FUN_OBJ_0(ps2_clear_obj, ps2_clear);
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(ps2_readinto_obj, 2, 3, ps2_readinto);
+STATIC MP_DEFINE_CONST_FUN_OBJ_KW(mp_ps2_init_obj, 0, mp_ps2_init);
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(mp_ps2_get_obj, mp_ps2_get);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_head_obj, mp_ps2_head);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_tail_obj, mp_ps2_tail);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_count_obj, mp_ps2_count);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_clock_obj, mp_ps2_clock);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_data_obj, mp_ps2_data);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_get_scan_code_obj, mp_ps2_get_scan_code);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_available_obj, mp_ps2_available);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_read_obj, mp_ps2_read);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_peek_obj, mp_ps2_peek);
+STATIC MP_DEFINE_CONST_FUN_OBJ_0(mp_ps2_clear_obj, mp_ps2_clear);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(mp_ps2_readinto_obj, 2, 3, mp_ps2_readinto);
 
-STATIC const mp_map_elem_t ps2_globals_table[] = {
+STATIC const mp_map_elem_t mp_ps2_globals_table[] = {
     { MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_ps2) },
-    { MP_ROM_QSTR(MP_QSTR_init), (mp_obj_t)&ps2_init_obj },
-    { MP_ROM_QSTR(MP_QSTR_get), (mp_obj_t)&ps2_get_obj },
-    { MP_ROM_QSTR(MP_QSTR_head), (mp_obj_t)&ps2_head_obj },
-    { MP_ROM_QSTR(MP_QSTR_tail), (mp_obj_t)&ps2_tail_obj },
-    { MP_ROM_QSTR(MP_QSTR_count), (mp_obj_t)&ps2_count_obj },
-    { MP_ROM_QSTR(MP_QSTR_clock), (mp_obj_t)&ps2_clock_obj },
-    { MP_ROM_QSTR(MP_QSTR_data), (mp_obj_t)&ps2_data_obj },
-    { MP_ROM_QSTR(MP_QSTR_get_scan_code), (mp_obj_t)&ps2_get_scan_code_obj },
-    { MP_ROM_QSTR(MP_QSTR_available), (mp_obj_t)&ps2_available_obj },
-    { MP_ROM_QSTR(MP_QSTR_read), (mp_obj_t)&ps2_read_obj },
-    { MP_ROM_QSTR(MP_QSTR_peek), (mp_obj_t)&ps2_peek_obj },
-    { MP_ROM_QSTR(MP_QSTR_clear), (mp_obj_t)&ps2_clear_obj },
-    { MP_ROM_QSTR(MP_QSTR_read), (mp_obj_t)&ps2_read_obj },
-    { MP_ROM_QSTR(MP_QSTR_readinto), (mp_obj_t)&ps2_readinto_obj },
+    { MP_ROM_QSTR(MP_QSTR_init), (mp_obj_t)&mp_ps2_init_obj },
+    { MP_ROM_QSTR(MP_QSTR_get), (mp_obj_t)&mp_ps2_get_obj },
+    { MP_ROM_QSTR(MP_QSTR_head), (mp_obj_t)&mp_ps2_head_obj },
+    { MP_ROM_QSTR(MP_QSTR_tail), (mp_obj_t)&mp_ps2_tail_obj },
+    { MP_ROM_QSTR(MP_QSTR_count), (mp_obj_t)&mp_ps2_count_obj },
+    { MP_ROM_QSTR(MP_QSTR_clock), (mp_obj_t)&mp_ps2_clock_obj },
+    { MP_ROM_QSTR(MP_QSTR_data), (mp_obj_t)&mp_ps2_data_obj },
+    { MP_ROM_QSTR(MP_QSTR_get_scan_code), (mp_obj_t)&mp_ps2_get_scan_code_obj },
+    { MP_ROM_QSTR(MP_QSTR_available), (mp_obj_t)&mp_ps2_available_obj },
+    { MP_ROM_QSTR(MP_QSTR_read), (mp_obj_t)&mp_ps2_read_obj },
+    { MP_ROM_QSTR(MP_QSTR_peek), (mp_obj_t)&mp_ps2_peek_obj },
+    { MP_ROM_QSTR(MP_QSTR_clear), (mp_obj_t)&mp_ps2_clear_obj },
+    { MP_ROM_QSTR(MP_QSTR_read), (mp_obj_t)&mp_ps2_read_obj },
+    { MP_ROM_QSTR(MP_QSTR_readinto), (mp_obj_t)&mp_ps2_readinto_obj },
 };
 
 STATIC MP_DEFINE_CONST_DICT (
     mp_module_ps2_globals,
-    ps2_globals_table
+    mp_ps2_globals_table
 );
 
 const mp_obj_module_t mp_module_ps2 = {
     .base = { &mp_type_module },
     .globals = (mp_obj_dict_t*)&mp_module_ps2_globals,
 };
+
+void
+ps2_init(int clockPin, int dataPin)
+{
+  ClockPin = clockPin;
+  DataPin = dataPin;
+  ps2_ClockMask = 1 << ClockPin;
+
+  // Setup GPIO interrupt from Clock pin
+  ETS_GPIO_INTR_DISABLE();
+  // interrupt when signal falling down. (2 = GPIO_PIN_INTR_NEGEDGE)
+  GPIO_REG_WRITE(GPIO_PIN_ADDR(ClockPin), (GPIO_REG_READ(GPIO_PIN_ADDR(ClockPin)) & ~GPIO_PIN_INT_TYPE_MASK) | GPIO_PIN_INT_TYPE_SET(2));
+  GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, ps2_ClockMask);
+  ETS_GPIO_INTR_ENABLE();
+
+  memset(buffer, 0, sizeof buffer);
+  head = 0;
+  tail = 0;
+  count = 0;
+}
 
 void
 ps2_callback()
@@ -220,8 +220,8 @@ ps2_callback()
   }
 }
 
-static uint8_t
-get_scan_code()
+uint8_t
+ps2_get_scan_code()
 {
   uint8_t c;
   uint8_t i;
@@ -333,7 +333,7 @@ get_iso8859_code()
   char c;
 
   while (1) {
-    s = get_scan_code();
+    s = ps2_get_scan_code();
     if (!s) {
       return 0;
     }
@@ -397,8 +397,8 @@ get_iso8859_code()
   }
 }
 
-static bool
-available()
+bool
+ps2_available()
 {
   if (CharBuffer) {
     return true;
@@ -407,8 +407,8 @@ available()
   return CharBuffer != 0;
 }
 
-static char
-read()
+char
+ps2_read()
 {
   if (CharBuffer) {
     char c = CharBuffer;
@@ -418,8 +418,8 @@ read()
   return get_iso8859_code();
 }
 
-static char
-peek()
+char
+ps2_peek()
 {
   if (CharBuffer) {
     return CharBuffer;
@@ -428,8 +428,8 @@ peek()
   return CharBuffer;
 }
 
-static void
-clear()
+void
+ps2_clear()
 {
   CharBuffer = 0;
 }
