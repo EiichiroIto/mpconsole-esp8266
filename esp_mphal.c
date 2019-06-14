@@ -34,6 +34,7 @@
 #include "py/runtime.h"
 #include "extmod/misc.h"
 #include "lib/utils/pyexec.h"
+#include "ps2.h"
 
 STATIC byte stdin_ringbuf_array[256];
 ringbuf_t stdin_ringbuf = {stdin_ringbuf_array, sizeof(stdin_ringbuf_array), 0, 0};
@@ -62,6 +63,10 @@ int mp_hal_stdin_rx_chr(void) {
         if (c != -1) {
             return c;
         }
+	c = ps2_read();
+	if (c != 0) {
+	  return c;
+	}
         #if 0
         // Idles CPU but need more testing before enabling
         if (!ets_loop_iter()) {
