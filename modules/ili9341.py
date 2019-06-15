@@ -31,7 +31,7 @@ class ILI9341(DisplaySPI):
         (0xc1, b'\x10'),  # Power Control 2, SAP[2:0], BT[3:0]
         (0xc5, b'\x3e\x28'),  # VCM Control 1
         (0xc7, b'\x86'),  # VCM Control 2
-        (0x36, b'\x48'),  # Memory Access Control
+        (0x36, b'\xE8'),  # Memory Access Control
         (0x3a, b'\x55'),  # Pixel Format
         (0xb1, b'\x00\x18'),  # FRMCTR1
         (0xb6, b'\x08\x82\x27'),  # Display Function Control
@@ -43,7 +43,6 @@ class ILI9341(DisplaySPI):
          b'\x00\x0e\x14\x03\x11\x07\x31\xc1\x48\x08\x0f\x0c\x31\x36\x0f'),
         (0x11, None),
         (0x29, None),
-        (0x36, b'\xE8'), # set display orientation
     )
     _ENCODE_PIXEL = ">H"
     _ENCODE_POS = ">HH"

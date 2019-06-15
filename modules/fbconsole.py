@@ -97,9 +97,10 @@ class FBConsole(uio.IOBase):
         self.x = 0
         self.y += 1
         if self.y >= self.h:
-            self.fb.scroll(0, -8)
-            self.fb.fill_rect(0, self.height - self.lineheight, self.width, self.lineheight, self.bgcolor)
-            self.y = self.h - 1
+            self.y = 0
+#            self.fb.scroll(0, -8)
+#            self.fb.fill_rect(0, self.height - self.lineheight, self.width, self.lineheight, self.bgcolor)
+#            self.y = self.h - 1
         self.y_end = self.y
 
     def _backspace(self):

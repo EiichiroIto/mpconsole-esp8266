@@ -10,3 +10,6 @@ from fbconsole import FBConsole
 console = FBConsole(fb)
 import os
 os.dupterm(console)
+
+def cls():
+    console.cls()
