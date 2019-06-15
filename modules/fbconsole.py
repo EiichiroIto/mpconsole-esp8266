@@ -23,6 +23,13 @@ class FBConsole(uio.IOBase):
         self.fgcolor = fgcolor
         self.line_height(8)
         self.cls()
+        self.enabled = True
+
+    def on(self):
+        self.enabled = True
+
+    def off(self):
+        self.enabled = False
 
     def cls(self):
         self.x = 0
@@ -62,6 +69,8 @@ class FBConsole(uio.IOBase):
         return n
 
     def write(self, buf):
+        if not self.enabled:
+            return len(buf)
         self._draw_cursor(self.bgcolor)
         i = 0
         while i < len(buf):

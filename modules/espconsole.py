@@ -13,3 +13,9 @@ os.dupterm(console)
 
 def cls():
     console.cls()
+
+def on():
+    console.on()
+
+def off():
+    console.off()
