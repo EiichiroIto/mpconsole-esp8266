@@ -107,7 +107,7 @@ index 03be59b..3d4c838 100644
  
  #define MICROPY_PORT_BUILTIN_MODULE_WEAK_LINKS \
      { MP_ROM_QSTR(MP_QSTR_binascii), MP_ROM_PTR(&mp_module_ubinascii) }, \
-diff --git a/ili9341.py b/ili9341.py
+diff --git a/modules/ili9341.py b/modules/ili9341.py
 --- /dev/null
 +++ ili9341.py
 @@ -31,7 +31,7 @@
@@ -119,7 +119,7 @@ diff --git a/ili9341.py b/ili9341.py
          (0x3a, b'\x55'),  # Pixel Format
          (0xb1, b'\x00\x18'),  # FRMCTR1
          (0xb6, b'\x08\x82\x27'),  # Display Function Control
-diff --git a/fbconsole.py b/fbconsole.py
+diff --git a/modules/fbconsole.py b/modules/fbconsole.py
 --- /dev/null
 +++ fbconsole.py
 @@ -23,6 +23,13 @@
