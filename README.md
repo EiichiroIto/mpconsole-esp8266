@@ -13,6 +13,15 @@ PS/2 input:
 LCD output:
 - supports ili9341 Lcd module (320x240).
 
+# Install and Build
+see README.orig.md carefully. Then do followings.
+
+    cd micropython/ports/
+    git clone https://github.com/EiichiroIto/mpconsole-esp8266.git
+    make
+    make erase
+    make deploy
+
 # Schematic
 
 ![schematic](https://raw.githubusercontent.com/EiichiroIto/mpconsole-esp8266/master/images/mpconsole.png)
