@@ -22,6 +22,10 @@ see README.orig.md carefully. Then do followings.
     make erase
     make deploy
 
+# Special Character Input 
+- ESC ,(comma) for '['
+- ESC .(period) for ']'
+
 # Schematic
 
 ![schematic](https://raw.githubusercontent.com/EiichiroIto/mpconsole-esp8266/master/images/mpconsole.png)
