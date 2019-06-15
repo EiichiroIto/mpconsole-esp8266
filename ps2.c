@@ -249,10 +249,6 @@ ps2_get_scan_code()
 #define PS2_END				0
 #define PS2_PAGEUP			25
 #define PS2_PAGEDOWN			26
-#define PS2_UPARROW			11
-#define PS2_LEFTARROW			8
-#define PS2_DOWNARROW			10
-#define PS2_RIGHTARROW			21
 #define PS2_F1				0
 #define PS2_F2				0
 #define PS2_F3				0
@@ -329,9 +325,14 @@ static char
 get_iso8859_code()
 {
   static uint8_t state = 0;
+  static char escbuf[3];
+  static int esccount = 0;
   uint8_t s;
   char c;
 
+  if (esccount > 0) {
+    return escbuf[-- esccount];
+  }
   while (1) {
     s = ps2_get_scan_code();
     if (!s) {
@@ -371,10 +372,10 @@ get_iso8859_code()
 	case 0x71: c = PS2_DELETE;      break;
 	case 0x69: c = PS2_END;         break;
 	case 0x7A: c = PS2_PAGEDOWN;    break;
-	case 0x75: c = PS2_UPARROW;     break;
-	case 0x6B: c = PS2_LEFTARROW;   break;
-	case 0x72: c = PS2_DOWNARROW;   break;
-	case 0x74: c = PS2_RIGHTARROW;  break;
+	case 117: c = PS2_ESC; escbuf[1] = '['; escbuf[0] = 'A'; esccount = 2;     break; // Up
+	case 107: c = PS2_ESC; escbuf[1] = '['; escbuf[0] = 'D'; esccount = 2;     break; // Left
+	case 114: c = PS2_ESC; escbuf[1] = '['; escbuf[0] = 'B'; esccount = 2;     break; // Down
+	case 116: c = PS2_ESC; escbuf[1] = '['; escbuf[0] = 'C'; esccount = 2;     break; // Right
 	case 0x4A: c = '/';             break;
 	case 0x5A: c = PS2_ENTER;       break;
 	default: break;
