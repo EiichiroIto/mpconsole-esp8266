@@ -7,7 +7,7 @@ Controller:
 - supports ESP-WROOM-02 module.
 
 PS/2 input:
-- only Clock and Data pin required.
+- only Clock and Data pin used.
 - does not supports Computer to Keyboard communication.
 
 LCD output:
@@ -22,7 +22,7 @@ see README.orig.md carefully. Then do followings.
     make erase
     make deploy
 
-# Special Character Input 
+# Input Special Character
 - ESC ,(comma) for '['
 - ESC .(period) for ']'
 
